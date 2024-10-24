@@ -1,55 +1,175 @@
 # Written By https://github.com/Igna73M
 
-
 #! /bin/bash
 
+
+# 1.1 Install the needed applications.
+# 1.2 If the applications are already installed, don’t install them again.
 function INSTALL()
-{
-	sudo apt-get update
-	sudo apt-get install geoip-bin sshpass curl grep  nmap -y
+{	
+	dpkg -s geoip-bin &> /dev/null  
+	if [ $? -ne 0 ]
+        then
+        	sudo apt-get update
+			sudo apt-get install geoip-bin  -y
+	fi
+	
+	dpkg -s sshpass &> /dev/null 
+	if [ $? -ne 0 ]
+        then
+        	sudo apt-get update
+			sudo apt-get install sshpass  -y
+	fi
+	
+	dpkg -s curl &> /dev/null 
+	if [ $? -ne 0 ]
+        then
+        	sudo apt-get update
+			sudo apt-get install curl  -y
+	fi
+	
+	dpkg -s grep &> /dev/null
+	if [ $? -ne 0 ]
+        then 
+        	sudo apt-get update
+			sudo apt-get install  grep  -y
+	fi
+	
+	dpkg -s nmap &> /dev/null 
+	if [ $? -ne 0 ]
+        then
+        	sudo apt-get update
+			sudo apt-get install nmap  -y
+	fi
+	
+	dpkg -s whois &> /dev/null 
+	if [ $? -ne 0 ]
+        then
+        	sudo apt-get update
+			sudo apt-get install whois  -y
+	fi
 }
 
-
-function check_Anony()
+# 1.3 Check if the network connection is anonymous; if not, alert the user and exit.
+function CHECK_ANONY()
 {
-	if [  "$(geoiplookup $(curl ifconfig.co -s) | grep -m 1 '$1')" ] # Anonymous Check with the use of Country abbr code $1
-	then
-		echo "You're not Anonymous exiting..."
-		echo " ... "
-		echo "    Bye!"
-		echo "        ... "
-		exit
-	else
-		# You are not Anonymous then use nipe to create tor network
-		git clone https://github.com/htrgouvea/nipe && cd nipe
-		cpanm --installdeps .
-		sudo perl nipe.pl install
-		perl nipe.pl restart
-		cd ..
-
-		# Then do remote execution using ssh
-		RMEx
+	
+clear
+	# Anonymous Check with the use of Country abbr code RW
+if [ "$(geoiplookup $(curl ifconfig.me -s) | grep -m 1 'RW')" ] 
+then
+	echo "You're not Anonymous..."
+	echo "    "
+	echo "    Bye!"
+	echo "            "
+	exit
+else
+		
+    #1.4 If the network connection is anonymous, display the spoofed country name.
+	cd /home/kali/nipe
+	echo "You're Anonymous!"
+	echo "Your Spoofed country is: $(geoiplookup  $( sudo perl nipe.pl status | grep 'Ip' | awk '{print $NF}') | awk '{print $(NF -1 )" " $NF}')"
+	
+	cd /home/kali/Desktop
+	
+		# 1.5 Allow the user to specify the address to scan via remote server; save into a variable.
+dest_ip=192.168.10.4
+	
+RMEx
 	fi
 }
 
 
-# Perform remote scan on the $2 host ip
+# 2. Automatically Connect and Execute Commands on the Remote Server via SSH
 function RMEx ()
-{
-	sshpass -p '<password>' ssh user@<Vps ip address> "sudo nmap -F $2" # $2 argument are the target host ip address
-	LOG
+{		
+# 3.1 Save the Whois and Nmap data into files on the local computer.
+
+Directory1=RemoteScan
+
+if [ -d "$Directory1" ]
+then
+
+	cd RemoteScan	
+				
+	# 2.1 Display the details of the remote server (country, IP, and Uptime).
+	Directory4=RemoteServer
+	if [ -d "$Directory4" ]
+	then
+		if [ -f "RemoteServer/Server" ]
+		then
+			 rm  RemoteServer/Server
+		fi
+		
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+	else
+		mkdir RemoteServer
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+	fi
+	
+	# 2.2 Get the remote server to check the Whois of the given address.
+	Directory2=whoinfo
+	if [ -d "$Directory2" ]
+	then
+		if [ -f "RemoteScan/whoinfo/whos" ]
+		then
+			sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 41.186.78.228" > RemoteScan/whoinfo/whos
+		fi
+	else
+		mkdir whoinfo
+		sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 41.186.78.228" > RemoteScan/whoinfo/whos
+	fi
+	
+	
+	# 2.3 Get the remote server to scan for open ports on the given address.
+	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S nmap 192.168.10.4 -T4 -oA nmapfiles"
+	
+	Directory3=nmap
+	if [ -d "$Directory3" ]
+	then
+		if [ -f "RemoteScan/nmap/nmapfiles.gnmap" or  "RemoteScan/nmap/nmapfiles.nmap" or "RemoteScan/nmap/nmapfiles.xml" ]
+		then
+			 rm RemoteScan/nmap/nmapfiles.gnmap  RemoteScan/nmap/nmapfiles.nmap  RemoteScan/nmap/nmapfiles.xml
+		fi
+		
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
+	else
+		mkdir nmap
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
+		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
+	fi
+	
+else
+	mkdir RemoteScan 
+	cd RemoteScan
+	mkdir nmap whoinfo RemoteServer
+		
+	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+		
+	sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 192.168.10.8" > whoinfo/whos
+		
+	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > nmap/nmapfiles.gnmap
+	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > nmap/nmapfiles.nmap
+	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > nmap/nmapfiles.xml
+fi
+	#LOG
 }
 
-
-
-# save log into the file
+# 3.2 Create a log
 function LOG()
 {
-	mkdir var
-	echo $(date) $HOSTNAME $0 $? "Remote Scanning from <Vps ip address> on host: $2" >> var/Scanning.log
+	File=RemoteScan/var/Scanning.log
+	if [ -f "$File" ]
+	then
+		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from 192.168.10.9 on host: $dest_ip" >> RemoteScan/var/Scanning.log
+	else
+		mkdir RemoteScan RemoteScan/var
+		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from 192.168.10.9 on host: $dest_ip" >> RemoteScan/var/Scanning.log
+	fi
 }
 
-
-INSTALL
-clear
-check_Anony
+#INSTALL
+CHECK_ANONY
