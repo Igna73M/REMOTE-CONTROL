@@ -3,8 +3,32 @@
 #! /bin/bash
 
 
-# 1.1 Install the needed applications.
-# 1.2 If the applications are already installed, don’t install them again.
+
+# 1.5 Allow the user to specify the address to scan via remote server; save into a variable.
+function MENU(){
+    echo -e "\e[32m" 
+    figlet -k -f small "    OPTION: "
+    read -p "Give the Virtual Private Server Ip Address : " vps_ip 
+    read -p "Username of the Server : " usrn
+    read -p "Give The Server Password : " pass
+    read -p "Give the Target IP Address : " trgt_ip 
+    echo -e "\e[0m"
+    
+    
+     #    echo "$vps_ip"
+     #    echo "$trgt_ip"
+     #    echo "$usrn"
+     #    echo "$pass"
+    
+    
+    INSTALL
+    CHECK_ANONY
+}
+	
+
+
+ # 1.1 Install the needed applications.
+ # 1.2 If the applications are already installed, don’t install them again.
 function INSTALL()
 {	
 	dpkg -s geoip-bin &> /dev/null  
@@ -72,9 +96,6 @@ else
 	
 	cd /home/kali/Desktop
 	
-		# 1.5 Allow the user to specify the address to scan via remote server; save into a variable.
-dest_ip=192.168.10.4
-	
 RMEx
 	fi
 }
@@ -101,10 +122,10 @@ then
 			 rm  RemoteServer/Server
 		fi
 		
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+		sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
 	else
 		mkdir RemoteServer
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+		sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
 	fi
 	
 	# 2.2 Get the remote server to check the Whois of the given address.
@@ -113,33 +134,33 @@ then
 	then
 		if [ -f "RemoteScan/whoinfo/whos" ]
 		then
-			sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 41.186.78.228" > RemoteScan/whoinfo/whos
+			sudo sshpass  -p $pass ssh "$usrn"@"$vps_ip" "echo '$pass' | sudo -S whois '$trgt_ip'" > RemoteScan/whoinfo/whos
 		fi
 	else
 		mkdir whoinfo
-		sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 41.186.78.228" > RemoteScan/whoinfo/whos
+		sudo sshpass  -p $pass ssh "$usrn"@"$vps_ip" "echo '$pass' | sudo -S whois '$trgt_ip'" > RemoteScan/whoinfo/whos
 	fi
 	
 	
 	# 2.3 Get the remote server to scan for open ports on the given address.
-	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S nmap 192.168.10.4 -T4 -oA nmapfiles"
+	sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "echo '$pass' | sudo -S nmap '$trgt_ip' -T4 -oA nmapfiles"
 	
 	Directory3=nmap
 	if [ -d "$Directory3" ]
 	then
-		if [ -f "RemoteScan/nmap/nmapfiles.gnmap" or  "RemoteScan/nmap/nmapfiles.nmap" or "RemoteScan/nmap/nmapfiles.xml" ]
+		if [ -f "RemoteScan/nmap/nmapfiles.gnmap" ] ||  [ -f "RemoteScan/nmap/nmapfiles.nmap" ] || [ -f "RemoteScan/nmap/nmapfiles.xml" ]
 		then
 			 rm RemoteScan/nmap/nmapfiles.gnmap  RemoteScan/nmap/nmapfiles.nmap  RemoteScan/nmap/nmapfiles.xml
 		fi
 		
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
+		#sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
+		#sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
+		#sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
 	else
 		mkdir nmap
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
-		sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
+		sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.gnmap" > RemoteScan/nmap/nmapfiles.gnmap
+		sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.nmap" > RemoteScan/nmap/nmapfiles.nmap
+		sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.xml"  > RemoteScan/nmap/nmapfiles.xml
 	fi
 	
 else
@@ -147,15 +168,15 @@ else
 	cd RemoteScan
 	mkdir nmap whoinfo RemoteServer
 		
-	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
+	sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "echo Remote Server Details: IP:  $(curl ifconfig.me -s) Country: $(geoiplookup $(curl ifconfig.me -s) ) Uptime: $(uptime | awk '{print $1 " " $2 " " $3 " " $4 " " $5 " " $6}')" >> RemoteServer/Server
 		
-	sudo sshpass  -p 'Kali\1' ssh kali@192.168.10.8 "echo 'Kali\1' | sudo -S whois 192.168.10.8" > whoinfo/whos
+	sudo sshpass  -p $pass ssh "$usrn"@"$vps_ip" "echo '$pass' | sudo -S whois '$trgt_ip'" > whoinfo/whos
 		
-	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.gnmap" > nmap/nmapfiles.gnmap
-	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.nmap" > nmap/nmapfiles.nmap
-	sudo sshpass -p 'Kali\1' ssh kali@192.168.10.8 "cat nmapfiles.xml"  > nmap/nmapfiles.xml
+	sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.gnmap" > nmap/nmapfiles.gnmap
+	sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.nmap" > nmap/nmapfiles.nmap
+	sudo sshpass -p $pass ssh "$usrn"@"$vps_ip" "cat nmapfiles.xml"  > nmap/nmapfiles.xml
 fi
-	#LOG
+	LOG
 }
 
 # 3.2 Create a log
@@ -164,12 +185,11 @@ function LOG()
 	File=RemoteScan/var/Scanning.log
 	if [ -f "$File" ]
 	then
-		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from 192.168.10.9 on host: $dest_ip" >> RemoteScan/var/Scanning.log
+		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from $vps_ip on host: $trgt_ip" >> RemoteScan/var/Scanning.log
 	else
 		mkdir RemoteScan RemoteScan/var
-		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from 192.168.10.9 on host: $dest_ip" >> RemoteScan/var/Scanning.log
+		echo $(date)": "$HOSTNAME": "$(pwd)"/"$0":" "Remote Scanning from $vps_ip on host: $trgt_ip" >> RemoteScan/var/Scanning.log
 	fi
 }
 
-#INSTALL
-CHECK_ANONY
+MENU
